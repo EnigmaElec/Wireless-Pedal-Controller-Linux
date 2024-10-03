@@ -116,6 +116,21 @@ if [ -z "$f" ] ;then
 		echo "unknown";;
     esac
 done
+elif [ $f=="original" ]; then
+  echo "+ Set Firmware to Original Files"
+  echo "+ Make Sure 3 Binary update files is in $ori Folder"
+	if [ -z "$( ls "$PWD"/Pedal_RX_original )" ]; then
+	   echo "+ The Pedal_RX_original folder is Empty can't upload firmware"
+       exit 
+	else
+	   echo "+ Flashing Firmware"
+       tput setaf 3
+       ls "$PWD"/Pedal_RX_original
+       tput sgr0
+       sleep 3
+ esptool.py -p $port -b $baud --before default_reset --after hard_reset --chip esp32 write_flash --flash_mode dio --flash_size detect --flash_freq 40m 0x1000 $ori/Pedal_RX.ino.bootloader.bin 0x8000 $ori/Pedal_RX.ino.partitions.bin 0x10000 $ori/Pedal_RX.ino.bin 
+	fi
+  echo ""
 elif [ $f=="update" ]; then
   echo "+ Set Firmware to Update Files"
   echo "+ Make Sure 3 Binary update files is in Update Folder"
