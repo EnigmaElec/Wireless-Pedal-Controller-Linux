@@ -5,4 +5,5 @@ Firmware Flasher for Wireless Pedal Controller for Linux
 1. Download The The Files or using git clone:  git clone https://github.com/EnigmaElec/Wireless-Pedal-Controller-Linux.git
   
 2. Enter into Wireless-Pedal-Controller and rightclick >> open in terminal
+   
 3. Type ./flash in terminal and follow the instruction
