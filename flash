@@ -1,0 +1,136 @@
+#!/bin/bash
+clear
+ori=$PWD/Pedal_RX_original
+update=$PWD/Update
+firmware="original"
+baud="921600"
+port="/dev/ttyUSB0"
+
+banner(){
+tput setaf 6
+echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+echo         Wireless Pedal Controller Firmware Flasher
+echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+tput sgr0
+}
+
+banner
+
+echo ""
+echo "+ Check Python is Installed or not :" 
+if command -v python3 >/dev/null 2>&1 
+then 
+    tput setaf 3
+	echo "+ Python is already installed"
+    tput sgr0
+else
+	sudo apt install python3 python3-pip python3-venv
+fi
+
+echo ""
+echo "+ Python Depedency Package : "
+if python -c "import esptool" &> /dev/null; then
+    tput setaf 3
+    echo '+ ESPtool is already installed '
+    #pip3 show esptool
+    tput sgr0
+else
+   pip3 install esptool
+fi
+
+
+echo ""
+echo "+ Directory content in $ori :"
+tput setaf 3
+ls "$PWD"/Pedal_RX_original
+tput sgr0
+
+echo ""
+echo "+ List of Available USB devices : "
+for sysdevpath in $(find /sys/bus/usb/devices/usb*/ -name dev); do
+    (
+        syspath="${sysdevpath%/dev}"
+        devname="$(udevadm info -q name -p $syspath)"
+        [[ "$devname" == "bus/"* ]] && exit
+        eval "$(udevadm info -q property --export -p $syspath)"
+        [[ -z "$ID_SERIAL" ]] && exit
+		tput setaf 3
+        echo "/dev/$devname - $ID_SERIAL"
+	    tput sgr0
+    )
+done
+
+
+echo ""
+echo -n "+ Enter USB Port : "
+read p
+if [ -z $p ];then
+ tput setaf 3
+ echo "+ Set to Default : $port "
+ tput sgr0
+else
+ port="$p" 
+ tput setaf 3
+ echo "+ Set Port to : $p"  
+ tput sgr0
+fi
+
+echo ""
+echo "+ Default Baudrate is 921600 but you can chage it"
+echo -n "+ BAUDRATE : "
+read b
+if [ -z "$b" ] ;then
+  tput setaf 3
+  echo "+ Baudrate set to Default $baud "
+  tput sgr0
+else
+  tput setaf 3
+  baud="$b"
+  echo "+ Baudrate set to $baud "
+  tput sgr0
+fi
+
+
+echo ""
+echo "+ Update/Original Firmware ?"
+echo -n "+ Firmware : "
+read f
+if [ -z "$f" ] ;then
+  echo "+ Set Firmware to $firmware Firmware"
+  while true; do
+  read -p "+ Do you want to Flashing Original Firmware?(y/n)" yn
+  case $yn in
+	[Yy]* )
+		echo "+ Flashing with Original Firmware";
+		echo "+ Make sure Pedal_RX_original is contains of 3 Binary files";
+        echo "+ Flashing..."
+        tput setaf 3
+        ls "$PWD"/Pedal_RX_original
+		tput sgr0
+        sleep 3
+ esptool.py -p $port -b $baud --before default_reset --after hard_reset --chip esp32 write_flash --flash_mode dio --flash_size detect --flash_freq 40m 0x1000 $ori/Pedal_RX.ino.bootloader.bin 0x8000 $ori/Pedal_RX.ino.partitions.bin 0x10000 $ori/Pedal_RX.ino.bin 
+		break;;
+	[Nn]* )
+		exit ;;
+	* )
+		echo "unknown";;
+    esac
+done
+elif [ $f=="update" ]; then
+  echo "+ Set Firmware to Update Files"
+  echo "+ Make Sure 3 Binary update files is in Update Folder"
+	if [ -z "$( ls "$PWD"/Update )" ]; then
+	   echo "+ The Update folder is Empty can't upload firmware"
+       exit 
+	else
+	   echo "+ Flashing Firmware"
+       tput setaf 3
+	   ls "$PWD"/Update
+       tput sgr0
+       sleep 3
+ esptool.py -p $port -b $baud --before default_reset --after hard_reset --chip esp32 write_flash --flash_mode dio --flash_size detect --flash_freq 40m 0x1000 $update/Pedal_RX.ino.bootloader.bin 0x8000 $update/Pedal_RX.ino.partitions.bin 0x10000 $update/Pedal_RX.ino.bin 
+	fi
+  echo ""
+fi
+
+
